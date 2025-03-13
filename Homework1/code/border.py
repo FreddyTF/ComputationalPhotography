@@ -49,5 +49,6 @@ def compare_border_types(image: np.ndarray, border_size: int) -> None:
     cv2.destroyAllWindows()
 
 
-image = cv2.imread("C:\Data\TUM\POSTECH\CompPhot\Homework\Workspace\ComputationalPhotography\Homework1\images\own_images\Image1.jpeg")
-compare_border_types(image, border_size=200)
+# 
+# image = cv2.imread("C:\Data\TUM\POSTECH\CompPhot\Homework\Workspace\ComputationalPhotography\Homework1\images\own_images\Image1.jpeg")
+# compare_border_types(image, border_size=200)
