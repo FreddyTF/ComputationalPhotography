@@ -74,3 +74,17 @@ def grayscale_histogram(image: np.ndarray) -> np.ndarray:
     plot_histogramm(equalized_histogram)
 
     return equalized_image
+
+def get_brightness(image: np.ndarray) -> float:
+    """
+    Compute the brightness of an image.
+    """
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    height, width = image.shape
+
+    brightness = np.sum(image) / (height * width)
+
+    return brightness
+

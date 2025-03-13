@@ -25,8 +25,8 @@ def test_gaussian_1d():
 
     test_kernel = gaussian_1d(sigma=sigma, size=size)
 
-    print(f"{true_kernel = }")
-    print(f"{test_kernel = }")
+    # print(f"{true_kernel = }")
+    # print(f"{test_kernel = }")
 
     assert np.allclose(true_kernel, test_kernel)
 
@@ -45,8 +45,8 @@ def test_gaussian_1d_2():
     true_kernel /= true_kernel.sum()
     test_kernel = gaussian_1d(sigma=sigma, size=size)
 
-    print(f"{true_kernel = }")
-    print(f"{test_kernel = }")
+    # print(f"{true_kernel = }")
+    # print(f"{test_kernel = }")
 
     assert np.allclose(true_kernel, test_kernel)
 
@@ -65,8 +65,8 @@ def test_gaussian_1d_3():
     true_kernel /= true_kernel.sum()
     test_kernel = gaussian_1d(sigma=sigma, size=size)
 
-    print(f"{true_kernel = }")
-    print(f"{test_kernel = }")
+    # print(f"{true_kernel = }")
+    # print(f"{test_kernel = }")
 
     assert np.allclose(true_kernel, test_kernel)
 
@@ -85,10 +85,10 @@ def test_gaussian_2d():
 
     test_kernel = gaussian_2d(sigma=sigma, size=size)
 
-    print(f"{true_kernel_2d = }")
-    print(f"{true_kernel_2d.sum() = }")
-    print(f"{test_kernel = }")
-    print(f"{test_kernel.sum() = }")
+    # print(f"{true_kernel_2d = }")
+    # print(f"{true_kernel_2d.sum() = }")
+    # print(f"{test_kernel = }")
+    # print(f"{test_kernel.sum() = }")
     assert np.allclose(true_kernel_2d, test_kernel)
 
 

@@ -2,15 +2,7 @@ import cv2
 import typing
 from typing import Literal, get_args
 import numpy as np
-
-
-BorderType = Literal[
-    cv2.BORDER_CONSTANT,
-    cv2.BORDER_REPLICATE,
-    cv2.BORDER_REFLECT,
-    cv2.BORDER_WRAP,
-    cv2.BORDER_REFLECT_101,
-]
+from border import apply_border, BorderType
 
 
 def gaussian_1d(sigma: float, size: int) -> np.ndarray:
@@ -49,6 +41,7 @@ def gaussian_2d(sigma: float, size: int) -> np.ndarray:
 
     kernel = kernel / np.sum(kernel)
     return kernel
+
 
 def gaussian_2d_direct(sigma: float, size: int) -> np.ndarray:
     """
@@ -96,9 +89,9 @@ def apply_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
 
     output_image = np.zeros((output_height, output_width, 3))
 
-    print(f"{output_width = }")
-    print(f"{output_height = }")
-    print(f"{image.shape = }")
+    # print(f"{output_width = }")
+    # print(f"{output_height = }")
+    # print(f"{image.shape = }")
 
     # apply horizontal filter
     for k in range(3):
@@ -129,7 +122,7 @@ def apply_non_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndar
     :return: The filtered image
     """
 
-    print(f"{kernel = }")
+    # print(f"{kernel = }")
 
     filter_size = kernel.shape[0]
     height, width = image.shape[:2]
@@ -139,9 +132,9 @@ def apply_non_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndar
 
     output_image = np.zeros((output_height, output_width, 3))
 
-    print(f"{output_width = }")
-    print(f"{output_height = }")
-    print(f"{image.shape = }")
+    # print(f"{output_width = }")
+    # print(f"{output_height = }")
+    # print(f"{image.shape = }")
 
     for k in range(3):
         for i in range(0, output_height):
@@ -152,15 +145,6 @@ def apply_non_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndar
 
     return output_image.astype(np.uint8)
 
-
-def apply_border(image: np.ndarray, border_type: BorderType) -> np.ndarray:
-    """
-    Apply a border to an image.
-    :param image: The image to filter
-    :param border_type: The border type to use
-    :return: The image with added border
-    """
-    return cv2.copyMakeBorder(image, 1, 1, 1, 1, border_type)
 
 
 def filterGaussian(
@@ -200,7 +184,7 @@ def filterGaussian(
         # apply separable filter
         kernel_1d = gaussian_1d(kernel_sigma, kernel_size)
         # 1d convolutional filter
-        print(f"{kernel_1d = }")
+        # print(f"{kernel_1d = }")
         image = apply_separable_filter(image, kernel_1d)
 
     else:

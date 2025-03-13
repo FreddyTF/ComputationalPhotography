@@ -18,7 +18,7 @@ def main():
         path_to_images = path_to_workspace / path_subfolder
         images = readImagesToNumpyArray(str(path_to_images))
         first_image = images[0]
-        print(first_image.shape)
+        # print(first_image.shape)
         processed_image = filterGaussian(
             image=first_image,
             kernel_size=3,
@@ -45,7 +45,7 @@ def main():
 
             # Check if all channels are equal
             if np.array_equal(b, g) and np.array_equal(g, r):
-                print("Found grayscale image")
+                # print("Found grayscale image")
                 first_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 break
 
