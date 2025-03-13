@@ -397,8 +397,8 @@ def create_plots_for_report():
     multiplot_histogramm_gray(image_gray)
 
 
-#multiplot_histogramm_gray_images_lecture()
-#multiplot_histogramm_color_images_lecture()
-#multiplot_histogramm_gray_images_own()
-multiplot_histogramm_color_images_own()
+# multiplot_histogramm_gray_images_lecture()
+# multiplot_histogramm_color_images_lecture()
+multiplot_histogramm_gray_images_own()
+# multiplot_histogramm_color_images_own()
 

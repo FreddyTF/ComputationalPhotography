@@ -41,18 +41,18 @@ def measure_gaussian(
 
 
 def plot_gaussian():
-    image_size = [10, 50, 100 , 200, 400, 800, 1000, 2000, 4000, 8000]
+    image_size = range(10, 500, 10)  # range(10, 1000, 500)
 
     measurements_1d = {}
     measurements_2d = {}
     for size in image_size:
         random_image = np.random.randint(0, 256, (size, size, 3), dtype=np.uint8)
         measurements_1d[size] = measure_gaussian(
-            random_image, size=3, which="1d", iterations=5
+            random_image, size=3, which="1d", iterations=3
         )
 
         measurements_2d[size] = measure_gaussian(
-            random_image, size=3, which="2d", iterations=5
+            random_image, size=3, which="2d", iterations=3
         )
 
     # Convert measurements to lists for plotting

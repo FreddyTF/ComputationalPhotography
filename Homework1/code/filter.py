@@ -146,7 +146,6 @@ def apply_non_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndar
     return output_image.astype(np.uint8)
 
 
-
 def filterGaussian(
     image: np.ndarray,
     kernel_size: int,
@@ -194,3 +193,16 @@ def filterGaussian(
         image = apply_non_separable_filter(image, kernel_2d)
 
     return image
+
+
+def compare_kernel_size_and_sigma():
+    # choose a sample image to perform the filtering
+    image = cv2.imread("data/lena.png")
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    kernel_sizes = [3, 5, 7, 9, 11]
+    sigmas = [0.1, 1, 2, 3, 4]
+
+    # create subplots of size 5 x 5
+
+    pass
