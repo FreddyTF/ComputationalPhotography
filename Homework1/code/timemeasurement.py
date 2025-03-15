@@ -40,8 +40,8 @@ def measure_gaussian(
     return measurements
 
 
-def plot_gaussian():
-    image_size = range(10, 500, 10)  # range(10, 1000, 500)
+def plot_gaussian_image_size():
+    image_size = range(100, 2000, 200)  # range(10, 1000, 500)
 
     measurements_1d = {}
     measurements_2d = {}
@@ -66,6 +66,39 @@ def plot_gaussian():
     plt.scatter(sizes, avg_runtimes_2d, color="red", label="2D Gaussian")
     plt.title("Average Runtime of Gaussian Filters by Image Size")
     plt.xlabel("Image Size")
+    plt.ylabel("Average Runtime (seconds)")
+    plt.legend()
+    plt.show()
+
+
+def plot_gaussian_kernel_size():
+    # image_size = range(100, 600, 100)  # range(10, 1000, 500)
+    kernel_sizes = range(3, 101, 8)
+
+    measurements_1d = {}
+    measurements_2d = {}
+    size = 300
+    for kernel_size in kernel_sizes:
+        random_image = np.random.randint(0, 256, (size, size, 3), dtype=np.uint8)
+        measurements_1d[kernel_size] = measure_gaussian(
+            random_image, size=kernel_size, which="1d", iterations=3
+        )
+
+        measurements_2d[kernel_size] = measure_gaussian(
+            random_image, size=kernel_size, which="2d", iterations=3
+        )
+
+    # Convert measurements to lists for plotting
+    sizes = list(measurements_1d.keys())
+    avg_runtimes_1d = [np.mean(measurements_1d[size]) for size in sizes]
+    avg_runtimes_2d = [np.mean(measurements_2d[size]) for size in sizes]
+
+    # Create scatter plot
+    plt.figure(figsize=(10, 6))
+    plt.scatter(sizes, avg_runtimes_1d, color="blue", label="1D Gaussian")
+    plt.scatter(sizes, avg_runtimes_2d, color="red", label="2D Gaussian")
+    plt.title("Average Runtime of Gaussian Filters by Kernel Size")
+    plt.xlabel("Kernel Size")
     plt.ylabel("Average Runtime (seconds)")
     plt.legend()
     plt.show()
@@ -100,4 +133,5 @@ def plot_violin(measurements_1d, measurements_2d):
     plt.show()
 
 
-plot_gaussian()
+# plot_gaussian_image_size()
+plot_gaussian_kernel_size()

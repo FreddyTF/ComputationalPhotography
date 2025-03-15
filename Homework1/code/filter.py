@@ -3,6 +3,7 @@ import typing
 from typing import Literal, get_args
 import numpy as np
 from border import apply_border, BorderType
+from matplotlib import pyplot as plt
 
 
 def gaussian_1d(sigma: float, size: int) -> np.ndarray:
@@ -24,7 +25,6 @@ def gaussian_1d(sigma: float, size: int) -> np.ndarray:
         )
 
     # normalize
-
     kernel = kernel / np.sum(kernel)
 
     return kernel
@@ -61,7 +61,6 @@ def gaussian_2d_direct(sigma: float, size: int) -> np.ndarray:
             )
 
     # normalize
-
     kernel = kernel / np.sum(kernel)
 
     return kernel
@@ -76,9 +75,6 @@ def apply_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     """
     assert kernel.ndim == 1, "Kernel must be a 1D array."
 
-    kernel_horizontal = kernel.reshape(-1, 1)
-    kernel_vertical = kernel
-
     filter_size = kernel.shape[0]
     height, width = image.shape[:2]
 
@@ -89,24 +85,20 @@ def apply_separable_filter(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
 
     output_image = np.zeros((output_height, output_width, 3))
 
-    # print(f"{output_width = }")
-    # print(f"{output_height = }")
-    # print(f"{image.shape = }")
-
     # apply horizontal filter
     for k in range(3):
+        # horizontal filter
         for i in range(0, height):
             for j in range(0, output_width):
                 intermediate_image[i, j, k] = np.sum(
-                    image[i, j : j + filter_size, k].reshape(-1, 1) * kernel_horizontal
+                    image[i, j : j + filter_size, k] * kernel
                 )
 
-    # apply vertical filter
-    for k in range(3):
+        # apply vertical filter
         for i in range(0, output_height):
             for j in range(0, output_width):
                 output_image[i, j, k] = np.sum(
-                    intermediate_image[i : i + filter_size, j, k] * kernel_vertical
+                    intermediate_image[i : i + filter_size, j, k] * kernel
                 )
 
     # check inputs according to taks definition
@@ -197,12 +189,60 @@ def filterGaussian(
 
 def compare_kernel_size_and_sigma():
     # choose a sample image to perform the filtering
-    image = cv2.imread("data/lena.png")
+    image = cv2.imread(
+        "C:\Data\TUM\POSTECH\CompPhot\Homework\Workspace\ComputationalPhotography\Homework1\images\image_quadratic\Image.jpg"
+    )
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    kernel_sizes = [3, 5, 7, 9, 11]
-    sigmas = [0.1, 1, 2, 3, 4]
+    kernel_sizes = [1, 5, 9, 15]
+    sigmas = [0.1, 3, 9, 15]
+
+    image_results = [[None] * len(kernel_sizes) for _ in range(len(sigmas))]
+
+    for kernel_size in kernel_sizes:
+        for sigma in sigmas:
+            # calculate kernel
+            kernel = gaussian_2d(sigma, kernel_size)
+            # apply filter
+            image_results[kernel_sizes.index(kernel_size)][sigmas.index(sigma)] = (
+                apply_non_separable_filter(image, kernel)
+            )
 
     # create subplots of size 5 x 5
+    fig, axs = plt.subplots(len(kernel_sizes), len(sigmas), figsize=(15, 15))
 
-    pass
+    for i in range(len(kernel_sizes)):
+        for j in range(len(sigmas)):
+            axs[i, j].imshow(image_results[i][j])
+            axs[i, j].set_title(f"Kernel Size: {kernel_sizes[i]}, Sigma: {sigmas[j]}")
+            axs[i, j].axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_kernel_size_and_sigma():
+    kernel_sizes = [1, 5, 9, 15]
+    sigmas = [0.1, 1, 2, 3]
+
+    kernels = [[None] * len(kernel_sizes) for _ in range(len(sigmas))]
+    for kernel_size in kernel_sizes:
+        for sigma in sigmas:
+            kernels[kernel_sizes.index(kernel_size)][sigmas.index(sigma)] = gaussian_1d(
+                sigma, kernel_size
+            )
+
+    fig, axs = plt.subplots(len(kernel_sizes), len(sigmas), figsize=(12, 12))
+    max_value = max(max(kernel) for row in kernels for kernel in row)
+    for i in range(len(kernel_sizes)):
+        for j in range(len(sigmas)):
+            axs[i, j].bar(range(len(kernels[i][j])), kernels[i][j])
+            axs[i, j].set_ylim(0, max_value)
+            axs[i, j].set_title(f"Kernel Size: {kernel_sizes[i]}, Sigma: {sigmas[j]}")
+            axs[i, j].set_xlabel("Index")
+            axs[i, j].set_ylabel("Value")
+
+    plt.tight_layout()
+    plt.show()
+
+# compare_kernel_size_and_sigma()
