@@ -4,21 +4,17 @@ import typing
 import matplotlib.pyplot as plt
 
 
-class ImageForms:
-    def __init__(self, image: np.ndarray,fourier_transform: np.ndarray, lowpass_filter: np.ndarray, filtering_result: np.ndarray, result: np.ndarray):
-        self.image = image
-        self.fourier_transform = fourier_transform
-        self.lowpass_filter = lowpass_filter
-        self.filtering_result = filtering_result
-        self.result = filtering_result
-
-
-def ideal_lowpass_filter(image, threshold_value):
+def ideal_lowpass_filter(
+    image: np.ndarray, threshold_value: int, visualize=False
+) -> np.ndarray:
     """
     Apply ideal lowpass filter to an image.
     :param image: input image
     :param threshold_value: radius of lowpass filter in frequency domain
     :return: filtered image
+
+    # f indicates the fourier transform of the image
+    # lowpass for filtered image
     """
 
     # implement image boundary handling to avoid color bleeding across the image
@@ -29,10 +25,13 @@ def ideal_lowpass_filter(image, threshold_value):
     # split RGB image into channels
     b, g, r = cv2.split(image)
     channels = [b, g, r]
-    channels_filtered = []
+    channels_cropped_filtered = []
+    channels_f = []
+    channels_f_filtered = []
 
     # create a mask to apply the filter only to the image and not the padding
-    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    mask = np.ones(image.shape[:2], dtype=np.uint8)
+
     for i in range(mask.shape[0]):
         for j in range(mask.shape[1]):
             if (
@@ -42,29 +41,74 @@ def ideal_lowpass_filter(image, threshold_value):
                 mask[i, j] = 0
 
     for channel in channels:
-        img_f = channel
-
         # fourier transform
-        img_f = np.fft.fft2(img_f)
+        channel_f = np.fft.fft2(channel)  # for reasons of simplicity now called
 
-        # img_f = psf2otf(img_f, channel.shape)
-
-        img_f = np.fft.fftshift(img_f)
+        channel_f_shifted = np.fft.fftshift(
+            channel_f
+        )  # shift the center of the image to the center of the fourier transform
 
         # apply ideal lowpass filter
         # lowest frequency is at the center of the image
         # set all frequencies outside the threshold to zero
+        channel_f_shifted_lowpass = channel_f_shifted * mask
 
         # inverse fourier transform
-        img_f = np.fft.ifftshift(img_f)
-        channel_filtered = np.real(np.fft.ifft2(img_f))
+        channel_f_lowpass = np.fft.ifftshift(
+            channel_f_shifted_lowpass
+        )  # reverse the shift
+        channel_lowpass = np.real(
+            np.fft.ifft2(channel_f_lowpass)
+        )  # reverse the fourier transform
 
         # remove padding
         # Crop back to original size to remove padding
-        cropped = channel_filtered[pad_size:-pad_size, pad_size:-pad_size]
-        channels_filtered.append(cropped)
+        cropped_channel = channel_lowpass[pad_size:-pad_size, pad_size:-pad_size]
+        channels_cropped_filtered.append(cropped_channel)
 
-    return cv2.merge(channels_filtered).astype(np.float32)
+        cropped_channel_f = channel_f[pad_size:-pad_size, pad_size:-pad_size]
+        channels_f.append(np.fft.fftshift(np.log(np.abs(cropped_channel_f) + 1)))
+
+        cropped_channel_f_lowpass = channel_f_lowpass[
+            pad_size:-pad_size, pad_size:-pad_size
+        ]
+        channels_f_filtered.append(
+            np.fft.fftshift(np.log(np.abs(cropped_channel_f_lowpass) + 1))
+        )
+
+    lowpass_image = cv2.merge(channels_cropped_filtered).astype(np.float32)
+
+    if visualize:
+        image_f = cv2.merge(channels_f).astype(np.float32)
+        image_f = cv2.normalize(image_f, None, 0, 1, cv2.NORM_MINMAX)
+        image_f_lowpass = cv2.merge(channels_f_filtered).astype(np.float32)
+        image_f_lowpass = cv2.normalize(image_f_lowpass, None, 0, 1, cv2.NORM_MINMAX)
+
+        plot_task_ideal_lowpass(image, lowpass_image, image_f, image_f_lowpass)
+
+    return lowpass_image
+
+
+def plot_task_ideal_lowpass(image, lowpass_image, image_f, image_f_lowpass):
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+
+    axs[0, 0].imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    axs[0, 0].set_title("Original Image in Spatial Domain")
+    axs[0, 0].axis("off")
+
+    axs[0, 1].imshow(image_f, cmap="gray", vmin=0, vmax=1)
+    axs[0, 1].set_title("Original Image in Frequency Domain")
+    axs[0, 1].axis("off")
+
+    axs[1, 0].imshow(cv2.cvtColor(lowpass_image, cv2.COLOR_BGR2RGB))
+    axs[1, 0].set_title("Lowpass Image in Spatial Domain")
+    axs[1, 0].axis("off")
+
+    axs[1, 1].imshow(image_f_lowpass, cmap="gray", vmin=0, vmax=1)
+    axs[1, 1].set_title("Lowpass Image in Frequency Domain")
+    axs[1, 1].axis("off")
+
+    plt.show()
 
 
 def psf2otf(flt, image_shape):
