@@ -101,11 +101,11 @@ def plot_task_ideal_lowpass(image, lowpass_image, image_f, image_f_lowpass):
     axs[0, 1].axis("off")
 
     axs[1, 0].imshow(cv2.cvtColor(lowpass_image, cv2.COLOR_BGR2RGB))
-    axs[1, 0].set_title("Lowpass Image in Spatial Domain")
+    axs[1, 0].set_title("Ideal Lowpass Image in Spatial Domain")
     axs[1, 0].axis("off")
 
     axs[1, 1].imshow(image_f_lowpass, cmap="gray", vmin=0, vmax=1)
-    axs[1, 1].set_title("Lowpass Image in Frequency Domain")
+    axs[1, 1].set_title("Ideal Lowpass Image in Frequency Domain")
     axs[1, 1].axis("off")
 
     plt.show()
