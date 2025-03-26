@@ -4,23 +4,28 @@ import matplotlib.pyplot as plt
 
 from ideal_lowpass_filter import ideal_lowpass_filter
 from gaussian_lowpass_filter import gaussian_lowpass_filter
-from unsharp_masking import unsharp_masking
+from unsharp_masking import (
+    unsharp_masking,
+    image_loader_compare_unmasking_spatial_and_frequency,
+    image_loader_compare_parameters,
+    compare_run_time,
+)
 
 
 def main():
     ideal_lowpass_filter_use = False
-    gaussian_lowpass_filter_use = True
+    gaussian_lowpass_filter_use = False
     unsharp_masking_use_spatial = False
-    unsharp_masking_use_frequency = False
+    unsharp_masking_use_frequency = True
 
     # ideal lowpass filter
 
     image = (
         cv2.imread(
             # r"images\own_images\dji_mimo_20250321_113618_0_1742555647725_photo.jpg",
-            r"images\own_images\dji_fly_20250321_124130_671_1742555378877_photo.jpg",
+            # r"images\own_images\dji_fly_20250321_124130_671_1742555378877_photo.jpg",
             # r"images\own_images\templemap.jpg",
-            # r"images/color3.jpg",
+            r"images/color3.jpg",
             cv2.IMREAD_COLOR,
         ).astype(np.float32)
         / 255.0
@@ -35,9 +40,27 @@ def main():
     elif gaussian_lowpass_filter_use:
         output = gaussian_lowpass_filter(image, threshold_value, visualize=True)
     elif unsharp_masking_use_spatial:
-        output = unsharp_masking(image, "spatial")  # filtered result
+        kernel_size = 3
+        kernel_sigma = 1
+        alpha = 0.5
+        output = unsharp_masking(
+            image=image,
+            domain="spatial",
+            kernel_size=kernel_size,
+            kernel_sigma=kernel_sigma,
+            alpha=alpha,
+        )  # filtered result
     elif unsharp_masking_use_frequency:
-        output = unsharp_masking(image, "frequency")
+        kernel_size = 3
+        kernel_sigma = 1
+        alpha = 0.5
+        output = unsharp_masking(
+            image,
+            domain="frequency",
+            kernel_size=kernel_size,
+            kernel_sigma=kernel_sigma,
+            alpha=alpha,
+        )
 
     # Display the original and filtered images
     plt.figure(figsize=(10, 5))
@@ -117,7 +140,7 @@ def show_different_gaussian_lowpass_filter_results():
         result = gaussian_lowpass_filter(image, threshold, visualize=False)
         results.append(result)
 
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(7, 6))
 
     plt.subplot(3, 2, 1)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -138,5 +161,8 @@ def show_different_gaussian_lowpass_filter_results():
 if __name__ == "__main__":
     # main()
     # show_different_ideal_lowpass_filter_results()
-    show_different_gaussian_lowpass_filter_results()
+    # show_different_gaussian_lowpass_filter_results()
+    # image_loader_compare_unmasking_spatial_and_frequency()
+    image_loader_compare_parameters()
+    # compare_run_time()
     pass

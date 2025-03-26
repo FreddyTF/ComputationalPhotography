@@ -38,7 +38,7 @@ def gaussian_lowpass_filter(image, threshold_value, visualize=False) -> np.ndarr
     # split RGB image into channels
     b, g, r = cv2.split(image)
     channels = [b, g, r]
-    channels_filtered = []
+    channels_cropped_filtered = []
     channels_f = []
     channels_f_filtered = []
 
@@ -60,21 +60,23 @@ def gaussian_lowpass_filter(image, threshold_value, visualize=False) -> np.ndarr
 
         # remove padding
         # Crop back to original size to remove padding
-        channels_filtered.append(cropped)
+        channels_cropped_filtered.append(cropped)
 
-        channels_f.append(np.fft.fftshift(np.log(np.abs(channel_f) + 1)))
-        channels_f_filtered.append(np.fft.fftshift(np.log(np.abs(channel_flt_f) + 1)))
+        cropped_channel_f = channel_f[pad_size:-pad_size, pad_size:-pad_size]
+        channels_f.append(np.fft.fftshift(np.log(np.abs(cropped_channel_f) + 1)))
+        cropped_channel_flt_f = channel_flt_f[pad_size:-pad_size, pad_size:-pad_size]
+        channels_f_filtered.append(
+            np.fft.fftshift(np.log(np.abs(cropped_channel_flt_f) + 1))
+        )
 
-    lowpass_image = cv2.merge(channels_filtered).astype(np.float32)
+    lowpass_image = cv2.merge(channels_cropped_filtered).astype(np.float32)
 
     if visualize:
         image_f = cv2.merge(channels_f).astype(np.float32)
         image_f = cv2.normalize(image_f, None, 0, 1, cv2.NORM_MINMAX)
         image_f_lowpass = cv2.merge(channels_f_filtered).astype(np.float32)
         image_f_lowpass = cv2.normalize(image_f_lowpass, None, 0, 1, cv2.NORM_MINMAX)
-        plot_task_gaussian_lowpass(
-            image, lowpass_image, channels_f, channels_f_filtered
-        )
+        plot_task_gaussian_lowpass(image, lowpass_image, image_f, image_f_lowpass)
 
     return lowpass_image
 
