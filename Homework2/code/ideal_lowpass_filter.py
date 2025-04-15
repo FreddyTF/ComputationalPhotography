@@ -18,7 +18,7 @@ def ideal_lowpass_filter(
     """
 
     # implement image boundary handling to avoid color bleeding across the image
-    pad_size = 10
+    pad_size = threshold_value  # padding size
     image = cv2.copyMakeBorder(
         image, pad_size, pad_size, pad_size, pad_size, cv2.BORDER_REFLECT
     )
@@ -66,14 +66,10 @@ def ideal_lowpass_filter(
         cropped_channel = channel_lowpass[pad_size:-pad_size, pad_size:-pad_size]
         channels_cropped_filtered.append(cropped_channel)
 
-        cropped_channel_f = channel_f[pad_size:-pad_size, pad_size:-pad_size]
-        channels_f.append(np.fft.fftshift(np.log(np.abs(cropped_channel_f) + 1)))
+        channels_f.append(np.fft.fftshift(np.log(np.abs(channel_f) + 1)))
 
-        cropped_channel_f_lowpass = channel_f_lowpass[
-            pad_size:-pad_size, pad_size:-pad_size
-        ]
         channels_f_filtered.append(
-            np.fft.fftshift(np.log(np.abs(cropped_channel_f_lowpass) + 1))
+            np.fft.fftshift(np.log(np.abs(channel_f_lowpass) + 1))
         )
 
     lowpass_image = cv2.merge(channels_cropped_filtered).astype(np.float32)

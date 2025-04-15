@@ -30,7 +30,7 @@ def gauss2d(shape=(11, 11), sigma=1):
 
 
 def gaussian_lowpass_filter(image, threshold_value, visualize=False) -> np.ndarray:
-    pad_size = 10
+    pad_size = threshold_value  # padding size
     image = cv2.copyMakeBorder(
         image, pad_size, pad_size, pad_size, pad_size, cv2.BORDER_REFLECT
     )
@@ -62,14 +62,58 @@ def gaussian_lowpass_filter(image, threshold_value, visualize=False) -> np.ndarr
         # Crop back to original size to remove padding
         channels_cropped_filtered.append(cropped)
 
-        cropped_channel_f = channel_f[pad_size:-pad_size, pad_size:-pad_size]
-        channels_f.append(np.fft.fftshift(np.log(np.abs(cropped_channel_f) + 1)))
-        cropped_channel_flt_f = channel_flt_f[pad_size:-pad_size, pad_size:-pad_size]
-        channels_f_filtered.append(
-            np.fft.fftshift(np.log(np.abs(cropped_channel_flt_f) + 1))
-        )
+        channels_f.append(np.fft.fftshift(np.log(np.abs(channel_f) + 1)))
+        channels_f_filtered.append(np.fft.fftshift(np.log(np.abs(channel_flt_f) + 1)))
 
     lowpass_image = cv2.merge(channels_cropped_filtered).astype(np.float32)
+
+    if visualize:
+        image_f = cv2.merge(channels_f).astype(np.float32)
+        image_f = cv2.normalize(image_f, None, 0, 1, cv2.NORM_MINMAX)
+        image_f_lowpass = cv2.merge(channels_f_filtered).astype(np.float32)
+        image_f_lowpass = cv2.normalize(image_f_lowpass, None, 0, 1, cv2.NORM_MINMAX)
+        plot_task_gaussian_lowpass(image, lowpass_image, image_f, image_f_lowpass)
+
+    return lowpass_image
+
+
+def gaussian_lowpass_filter_variable_border_size(
+    image, threshold_value, visualize=False, border_size: int = 0
+) -> np.ndarray:
+    pad_size = border_size
+    image = cv2.copyMakeBorder(
+        image, pad_size, pad_size, pad_size, pad_size, cv2.BORDER_CONSTANT, value=0
+    )
+
+    # split RGB image into channels
+    b, g, r = cv2.split(image)
+    channels = [b, g, r]
+    channels_filtered = []
+    channels_f = []
+    channels_f_filtered = []
+
+    hs = threshold_value  # half of the filter size
+    flt = gauss2d((hs * 2 + 1, hs * 2 + 1), hs / 6.0)
+
+    for channel in channels:
+        # fourier transform
+        channel_f = np.fft.fft2(channel)
+
+        flt_f = psf2otf(flt, channel.shape)
+
+        channel_flt_f = channel_f * flt_f
+
+        # inverse fourier transform
+        channel_filtered = np.real(np.fft.ifft2(channel_flt_f))
+
+        # remove padding
+        # Crop back to original size to remove padding
+        channels_filtered.append(channel_filtered)
+
+        channels_f.append(np.fft.fftshift(np.log(np.abs(channel_f) + 1)))
+        channels_f_filtered.append(np.fft.fftshift(np.log(np.abs(channel_flt_f) + 1)))
+
+    lowpass_image = cv2.merge(channels_filtered).astype(np.float32)
 
     if visualize:
         image_f = cv2.merge(channels_f).astype(np.float32)

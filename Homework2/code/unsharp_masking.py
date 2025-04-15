@@ -3,6 +3,7 @@ import numpy as np
 from gaussian_lowpass_filter import gauss2d
 import matplotlib.pyplot as plt
 import time
+from ideal_lowpass_filter import psf2otf
 
 
 def unsharp_masking(
@@ -11,7 +12,7 @@ def unsharp_masking(
     """
     Apply unsharp masking to an image.
     """
-    pad_size = 10
+    pad_size = kernel_size // 2  # padding size
     image = cv2.copyMakeBorder(
         image, pad_size, pad_size, pad_size, pad_size, cv2.BORDER_REFLECT
     )
@@ -70,14 +71,16 @@ def unsharp_masking_frequency(
     """ """
     # Y = X + alpha (X - G conv X)
     # result = image + alpha ( X - G conv X)
-
+    print("Frequency Domain")
     kernel = gauss2d((kernel_size, kernel_size), sigma=kernel_sigma)
 
     # convert image to frequency domain
     image_f = np.fft.fft2(image)
 
     # convert kernel to frequency domain
-    kernel_f = np.fft.fft2(kernel, s=image.shape)
+    kernel_f = psf2otf(kernel, image.shape)
+
+    # kernel_f = np.fft.fft2(kernel, s=image.shape)
 
     # apply kernel to image
     GvonvX_f = image_f * kernel_f
@@ -160,7 +163,7 @@ def image_loader_compare_unmasking_spatial_and_frequency():
     ]
 
     kernel_size = [3, 5, 7, 11]
-    alpha = [1, 4, 8, 16]
+    alpha = [10, 4, 8, 16]
     kernel_sigma = [1, 2, 4, 8]
 
     for counter, image_path in enumerate(image_path):
@@ -192,7 +195,6 @@ def image_loader_compare_parameters():
     alpha = [0.1, 0.5, 3, 6]
     kernel_sigma = [0.5, 1, 2, 4]
 
-    # fixed alpha
     for counter, image_path in enumerate(image_path):
         image = (
             cv2.imread(
@@ -203,14 +205,14 @@ def image_loader_compare_parameters():
         )
 
         fig, axes = plt.subplots(len(kernel_size), len(kernel_sigma), figsize=(15, 15))
-        fig.suptitle(f"Unsharp Masking with Fixed Alpha = {alpha[1]}", fontsize=16)
-
+        fig.suptitle(f"Unsharp Masking with Fixed Alpha = {alpha[3]}", fontsize=16)
+        # fixed alpha
         for i, ks in enumerate(kernel_size):
             for j, sigma in enumerate(kernel_sigma):
                 output = unsharp_masking(
                     image=image,
                     domain="frequency",
-                    alpha=alpha[1],
+                    alpha=alpha[3],
                     kernel_size=ks,
                     kernel_sigma=sigma,
                 )
@@ -225,7 +227,7 @@ def image_loader_compare_parameters():
             r"results\unsharp_masking\compare_parameters\image"
             + str(counter)
             + "_fixed_alpha.png",
-            dpi=300,  # high resolution
+            dpi=100,  # high resolution
         )
         plt.close(fig)
 
@@ -255,7 +257,7 @@ def image_loader_compare_parameters():
             r"results\unsharp_masking\compare_parameters\image"
             + str(counter)
             + "_fixed_kernel_size.png",
-            dpi=300,  # high resolution
+            dpi=100,  # high resolution
         )
         plt.close(fig)
 
@@ -286,7 +288,7 @@ def image_loader_compare_parameters():
             r"results\unsharp_masking\compare_parameters\image"
             + str(counter)
             + "_fixed_kernel_sigma.png",
-            dpi=300,  # high resolution
+            dpi=100,  # high resolution
         )
         plt.close(fig)
 
