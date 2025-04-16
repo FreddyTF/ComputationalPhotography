@@ -1,8 +1,27 @@
-def main():
-    images = []
-    # collect images
-    # set refernece image
-    # iterate over images
+import typing
+from typing import List, Tuple
+import numpy as np
+import cv2
+
+
+def create_panorama(images: List[np.ndarray]) -> np.ndarray:
+    # Create a panorama from a list of images
+    # This function will be called in the main function
+    # It will take a list of images and return a panorama image
+
+    if len(images) < 2:
+        return images[0]
+    
+    if len(images) == 2:
+        # detect feature points
+
+        # match feature points
+        # calculate homography via ransac
+        # wrap image
+        # composite image
+        
+        pass
+
 
     for image in images:
         # set first image as reference
@@ -35,7 +54,16 @@ def main():
         images.remove(correspondence_image)
 
         # store composited_iamge as starting image for nex composition
-    pass
+    return images[0]
+
+
+def main():
+    images = []
+    # collect images
+    # set refernece image
+    # iterate over images
+
+    create_panorama(images)
 
 
 if __name__ == "__main__":
