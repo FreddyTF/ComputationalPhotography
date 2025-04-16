@@ -32,6 +32,8 @@ def test_ransac():
 
     matches = match_features(img1, kp1, des1, img2, kp2, des2, visualize=False)
 
-    ransac_matches = ransac(matches, threshold=5.0, iterations=1000)
+    ransac_matches = ransac(
+        matches, img1, img2, kp1, kp2, threshold=5.0, iterations=1000
+    )
 
     assert ransac_matches is not None, "RANSAC matches should not be None"

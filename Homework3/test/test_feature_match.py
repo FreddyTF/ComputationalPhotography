@@ -33,3 +33,4 @@ def test_feature_detection():
 
     assert matches is not None, "Matches should not be None"
     assert len(matches) > 0, "Matches should be found"
+    
