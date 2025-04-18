@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../code
 
 from feature_detect import detect_features
 from feature_match import match_features
-from ransac import ransac, compute_ssd_of_neighborhood
+from ransac import ransac, compute_ssd_of_neighborhood, compute_average_homography
 import cv2
 import glob
 
@@ -35,7 +35,6 @@ def test_ransac():
     ransac_matches = ransac(
         matches, img1, img2, kp1, kp2, threshold=5.0, iterations=10000
     )
-
     assert ransac_matches is not None, "RANSAC matches should not be None"
 
 
@@ -65,5 +64,3 @@ def test_compute_ssd_of_neighborhood():
     expected_ssd = np.sum((img1[3:8, 3:8] - img2[3:8, 3:8]) ** 2)
 
     assert ssd == expected_ssd, f"Expected SSD to be {expected_ssd}, but got {ssd}"
-
-   

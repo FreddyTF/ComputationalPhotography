@@ -6,35 +6,37 @@ from homography import apply_homography, invert_homography
 from matplotlib import pyplot as plt
 
 
-def compute_ssd_of_neighborhood(img1, img2, point1, point2, print_debug=False):
+def compute_ssd_of_neighborhood(img1, img2, point1, point2, patch_size: int = 3, print_debug=False):
     """
     COmpute the sum of squared differences (SSD) between two patches in two images.
     The patches are centered around the given points.
     The patches are 5x5 pixels in size.
     """
+    half_patch_size = patch_size // 2
+    half_patch_size_upper = half_patch_size + 1
+
     if (
-        point1[1] - 2 < 0
-        or point1[1] + 3 > img1.shape[0]
-        or point1[0] - 2 < 0
-        or point1[0] + 3 > img1.shape[1]
-        or point2[1] - 2 < 0
-        or point2[1] + 3 > img2.shape[0]
-        or point2[0] - 2 < 0
-        or point2[0] + 3 > img2.shape[1]
+        point1[1] - half_patch_size < 0
+        or point1[1] + half_patch_size_upper + 1 > img1.shape[0]
+        or point1[0] - half_patch_size < 0
+        or point1[0] + half_patch_size_upper > img1.shape[1]
+        or point2[1] - half_patch_size < 0
+        or point2[1] + half_patch_size_upper > img2.shape[0]
+        or point2[0] - half_patch_size < 0
+        or point2[0] + half_patch_size_upper > img2.shape[1]
     ):
         return np.inf
         # raise ValueError("Patch goes out of image bounds.")
 
-    points1 = img1[point1[1] - 2 : point1[1] + 3, point1[0] - 2 : point1[0] + 3]
-    points2 = img2[point2[1] - 2 : point2[1] + 3, point2[0] - 2 : point2[0] + 3]
+    points1 = img1[point1[1] - half_patch_size : point1[1] + half_patch_size_upper, point1[0] - half_patch_size : point1[0] + half_patch_size_upper]
+    points2 = img2[point2[1] - half_patch_size : point2[1] + half_patch_size_upper, point2[0] - half_patch_size : point2[0] + half_patch_size_upper]
 
     if print_debug:
         print(f"points1: {points1.shape}")
         print(f"points2: {points2.shape}")
 
     # Compute the sum of squared differences (SSD)
-    ssd = np.sum((points1 - points2) ** 2) / (5 * 5 * 3)
-
+    ssd = np.sum((points1 - points2) ** 2) / (patch_size**2 * 3)
     return ssd
 
 
@@ -51,7 +53,7 @@ def ransac(
 
     best_inliers = []
     best_H = None
-
+  
     for x in range(n):
         # Select 4 random matches
         random_matches = random.sample(matches, 4)
@@ -89,7 +91,6 @@ def ransac(
         # reset to empty lists
         inliers = []
         outliers = []
-        threshold = 100.0  # Define a threshold for inliers
         # H = invert_homography(H)
 
         for match in matches:
@@ -126,7 +127,7 @@ def ransac(
                     plt.close()
 
                 reprojection_error = compute_ssd_of_neighborhood(
-                    img1, img2, point1, homographed_point
+                    img1, img2, point1, homographed_point, patch_size=1
                 )
 
                 if reprojection_error < threshold:
@@ -135,11 +136,23 @@ def ransac(
         if len(inliers) > len(best_inliers):
             print("Found better inliers")
             print(f"H: {H}")
-            
+
             best_inliers = inliers.copy()
             best_H = H
 
     print(f"Number of inliers: {len(best_inliers)}")
     print(f"Number of outliers: {len(matches) - len(best_inliers)}")
     print(f"Homography matrix: {best_H}")
-    return best_inliers
+    return best_inliers, best_H
+
+
+def compute_average_homography(best_inliers, kp1, kp2):
+    """
+    Compute the average homography matrix using the best inliers.
+    """
+    homography, _ = cv2.findHomography(
+        np.array([kp1[match.queryIdx].pt for match in best_inliers], dtype=np.float32),
+        np.array([kp2[match.trainIdx].pt for match in best_inliers], dtype=np.float32),
+    )
+
+    return homography
