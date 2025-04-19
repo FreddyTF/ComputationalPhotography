@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def detect_features(img: np.ndarray, visualize: bool = False):
     orb = cv2.ORB_create(
-        nfeatures=2000,  # max number of features to retain
+        nfeatures=1000,  # max number of features to retain
         scaleFactor=1.2,  # scale factor between levels in the pyramid
         nlevels=8,  # number of levels in the pyramid
         edgeThreshold=31,  # size of the border where features are not detected

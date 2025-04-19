@@ -5,48 +5,11 @@ from homography import apply_homography, invert_homography
 from matplotlib import pyplot as plt
 
 
-def warpImages(img1, img2, H):
-    rows1, cols1 = img1.shape[:2]
-    rows2, cols2 = img2.shape[:2]
-
-    list_of_points_1 = np.float32(
-        [[0, 0], [0, rows1], [cols1, rows1], [cols1, 0]]
-    ).reshape(-1, 1, 2)
-    temp_points = np.float32([[0, 0], [0, rows2], [cols2, rows2], [cols2, 0]]).reshape(
-        -1, 1, 2
-    )
-
-    # When we have established a homography we need to warp perspective
-    # Change field of view
-    list_of_points_2 = cv2.perspectiveTransform(temp_points, H)
-
-    list_of_points = np.concatenate((list_of_points_1, list_of_points_2), axis=0)
-
-    [x_min, y_min] = np.int32(list_of_points.min(axis=0).ravel() - 0.5)
-    [x_max, y_max] = np.int32(list_of_points.max(axis=0).ravel() + 0.5)
-
-    translation_dist = [-x_min, -y_min]
-
-    H_translation = np.array(
-        [[1, 0, translation_dist[0]], [0, 1, translation_dist[1]], [0, 0, 1]]
-    )
-
-    output_img = cv2.warpPerspective(
-        img2, H_translation.dot(H), (x_max - x_min, y_max - y_min)
-    )
-    output_img[
-        translation_dist[1] : rows1 + translation_dist[1],
-        translation_dist[0] : cols1 + translation_dist[0],
-    ] = img1
-
-    return output_img
-
-
 def warp_images_inverse(
     homography: np.ndarray,
     image1: np.ndarray,
     image2: np.ndarray,
-    visualise: bool = False,
+    visualize: bool = False,
 ) -> np.ndarray:
     """
     Warp image2 to the perspective of image1 using the provided homography matrix.
@@ -59,163 +22,85 @@ def warp_images_inverse(
     Returns:
         np.ndarray: The warped panorama image.
     """
-
-    # Get the dimensions of the images
-    h1, w1 = image1.shape[:2]
-    h2, w2 = image2.shape[:2]
-
-    # Define the corners of the images
-    corners_img1 = np.array(
-        [[0, 0], [0, h1], [w1, h1], [w1, 0]], dtype=np.float32
-    ).reshape(-1, 1, 2)
-    corners_img2 = np.array(
-        [[0, 0], [0, h2], [w2, h2], [w2, 0]], dtype=np.float32
-    ).reshape(-1, 1, 2)
+    # if homography[0, 2] < 0:
+    #     image1, image2 = image2, image1
+    #     homography = invert_homography(homography)
+    if homography[0, 2] > 0:
+        image1, image2 = image2, image1
+        homography = invert_homography(homography)
 
     inverted_homography = invert_homography(homography)
-    # Warp the corners of image2 using the homography matrix
-    warped_corners = cv2.perspectiveTransform(corners_img2, inverted_homography)
 
-    # Combine the corners of both images to find the bounding box
-    all_corners = np.concatenate((warped_corners, corners_img1), axis=0)
+    # Warp image2 into the coordinate space of image1
+    height1, width1 = image1.shape[:2]
+    height2, width2 = image2.shape[:2]
 
-    [xmin, ymin] = np.int32(all_corners.min(axis=0).ravel() - 0.5)
-    [xmax, ymax] = np.int32(all_corners.max(axis=0).ravel() + 0.5)
-
-    # Create the panorama canvas
-    panorama_size = (xmax - xmin, ymax - ymin)
-    panorama = np.zeros((ymax - ymin, xmax - xmin, 3), dtype=image1.dtype)
-
-    # Fill the panorama with image1
-    panorama[-ymin : h1 - ymin, -xmin : w1 - xmin] = image1  # TODO why minus
-
-    if False:
-        for x in range(h1 - ymin, panorama.shape[1]):
-            for y in range(w1 - xmin, panorama.shape[0]):
-                point = np.array([x, y, 1], dtype=np.float32)
-                point2 = homography @ point
-                point2 /= point2[2]
-                point3 = point2[:2]
-
-                neighboring_point_left_top = np.array(
-                    [np.floor(point2[0]), np.floor(point2[1])], dtype=np.int32
-                )
-
-                neighboring_point_right_top = np.array(
-                    [np.ceil(point2[0]), np.floor(point2[1])], dtype=np.int32
-                )
-                neighboring_point_left_bottom = np.array(
-                    [np.floor(point2[0]), np.ceil(point2[1])], dtype=np.int32
-                )
-                neighboring_point_right_bottom = np.array(
-                    [np.ceil(point2[0]), np.ceil(point2[1])], dtype=np.int32
-                )
-                calculate_distance_left_top = np.linalg.norm(
-                    point3 - neighboring_point_left_top
-                )
-                calculate_distance_right_top = np.linalg.norm(
-                    point3 - neighboring_point_right_top
-                )
-                calculate_distance_left_bottom = np.linalg.norm(
-                    point3 - neighboring_point_left_bottom
-                )
-                calculate_distance_right_bottom = np.linalg.norm(
-                    point3 - neighboring_point_right_bottom
-                )
-
-                try:
-                    panorama[y, x] = (
-                        image2[
-                            neighboring_point_left_bottom[1],
-                            neighboring_point_left_bottom[0],
-                        ]
-                        * calculate_distance_left_top
-                        + image2[
-                            neighboring_point_right_bottom[1],
-                            neighboring_point_right_bottom[0],
-                        ]
-                        * calculate_distance_right_top
-                        + image2[
-                            neighboring_point_left_top[1], neighboring_point_left_top[0]
-                        ]
-                        * calculate_distance_left_bottom
-                        + image2[
-                            neighboring_point_right_top[1],
-                            neighboring_point_right_top[0],
-                        ]
-                        * calculate_distance_right_bottom
-                    ) / (
-                        calculate_distance_left_top
-                        + calculate_distance_right_top
-                        + calculate_distance_left_bottom
-                        + calculate_distance_right_bottom
-                    )
-                except IndexError:
-                    # If the point is out of bounds, skip it
-                    continue
-
-    elif True:
-        # Warp image2 to the panorama canvas using the inverse homography
-        warped_img2 = cv2.warpPerspective(
-            image2, homography, panorama_size, flags=cv2.INTER_LINEAR
-        )
-
-        panorama2 = np.zeros((ymax - ymin, xmax - xmin, 3), dtype=image1.dtype)
-        # Fill the panorama with image2
-        panorama2[-ymin : h2 - ymin, -xmin : w2 - xmin] = warped_img2
-
-        
-        # Fill the panorama with the warped image2
-        panorama = cv2.add(image1, warped_img2)
-
-    if visualise:
-        plt.imshow(panorama)
-        plt.title("Warped Image")
-        plt.show()
-
-    return panorama
-
-
-def warp_images(homography, image1, image2, visualise=False):
-    # use inverse transform
-
-    # we can compute the inverse homography
-    # and use it to avoid the hole fillig problem
-
-    # create a new image with the size of the first image + second image
-    # and fill it with undefined values
-
-    h1, w1 = image1.shape[:2]
-    h2, w2 = image2.shape[:2]
-
-    corners_img2 = np.array(
-        [[0, 0], [0, h2], [w2, h2], [w2, 0]], dtype=np.float32
-    ).reshape(-1, 1, 2)
-    corners_img1 = np.array(
-        [[0, 0], [0, h1], [w1, h1], [w1, 0]], dtype=np.float32
+    # Get corners of image2 before warp
+    corners_img2 = np.float32(
+        [[0, 0], [0, height2], [width2, height2], [width2, 0]]
     ).reshape(-1, 1, 2)
 
-    warped_corners = cv2.perspectiveTransform(corners_img2, homography)
+    H = homography
+    transformed_corners = cv2.perspectiveTransform(corners_img2, H)
 
-    all_corners = np.concatenate((warped_corners, corners_img1), axis=0)
+    # Combine corners from both images to compute bounding box
+    corners_img1 = np.float32(
+        [[0, 0], [0, height1], [width1, height1], [width1, 0]]
+    ).reshape(-1, 1, 2)
+    all_corners = np.concatenate((corners_img1, transformed_corners), axis=0)
 
-    [xmin, ymin] = np.int32(all_corners.min(axis=0).ravel() - 0.5)
-    [xmax, ymax] = np.int32(all_corners.max(axis=0).ravel() + 0.5)
+    [x_min, y_min] = np.int32(all_corners.min(axis=0).ravel() - 0.5)
+    [x_max, y_max] = np.int32(all_corners.max(axis=0).ravel() + 0.5)
 
-    # Translation matrix to shift the image to a positive canvas
-    translation = np.array([[1, 0, -xmin], [0, 1, -ymin], [0, 0, 1]])
+    # Size of the final panorama
+    panorama_size = (x_max - x_min, y_max - y_min)
 
-    # Warp img2 to panorama
-    panorama_size = (xmax - xmin, ymax - ymin)
-    warped_img2 = cv2.warpPerspective(image2, translation @ homography, panorama_size)
+    # Adjust homography to include translation
 
-    # Create empty panorama and paste img1 into it
-    panorama = warped_img2.copy()
-    panorama[-ymin : h1 - ymin, -xmin : w1 - xmin] = image1
+    # Warp image2
 
-    if visualise:
+    # translation = np.array([[1, 0, x_min], [0, 1, y_min], [0, 0, 1]])
+    # translation @
+
+    warped_img2 = cv2.warpPerspective(
+        image2,
+        inverted_homography,
+        panorama_size,
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_TRANSPARENT,
+    )
+
+    # Place image1 on the panorama canvas
+    panorama = np.zeros((panorama_size[1], panorama_size[0], 3), dtype=np.uint8)
+    # panorama[y_min : height1 + y_min, x_min : width1 + x_min] = image1
+    # panorama[-y_min : -y_min + height1, -x_min : -x_min + width1] = image1
+    panorama[0 : 0 + height1, 0 : 0 + width1] = image1
+
+    if visualize:
         plt.imshow(panorama)
-        plt.title("Warped Image")
+        plt.title("Panorama")
         plt.show()
 
-    return panorama
+        plt.imshow(warped_img2)
+        plt.title("Warped Image 2")
+        plt.show()
+
+    # Blend using mask
+    mask = cv2.cvtColor(warped_img2, cv2.COLOR_BGR2GRAY)
+    _, mask = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)
+    mask_inv = cv2.bitwise_not(mask)
+
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.dilate(mask, kernel, iterations=1)
+    mask_3ch = cv2.merge([mask, mask, mask])
+    mask_inv_3ch = cv2.merge([mask_inv, mask_inv, mask_inv])
+
+    panorama_bg = cv2.bitwise_and(panorama, mask_inv_3ch)
+    img2_fg = cv2.bitwise_and(warped_img2, mask_3ch)
+    final_blend = cv2.add(panorama_bg, img2_fg)
+
+    plt.imshow(final_blend)
+    plt.title("Final Blended Panorama")
+    plt.show()
+
+    return final_blend

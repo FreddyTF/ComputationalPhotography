@@ -6,7 +6,9 @@ from homography import apply_homography, invert_homography
 from matplotlib import pyplot as plt
 
 
-def compute_ssd_of_neighborhood(img1, img2, point1, point2, patch_size: int = 3, print_debug=False):
+def compute_ssd_of_neighborhood(
+    img1, img2, point1, point2, patch_size: int = 3, print_debug=False
+):
     """
     COmpute the sum of squared differences (SSD) between two patches in two images.
     The patches are centered around the given points.
@@ -28,8 +30,14 @@ def compute_ssd_of_neighborhood(img1, img2, point1, point2, patch_size: int = 3,
         return np.inf
         # raise ValueError("Patch goes out of image bounds.")
 
-    points1 = img1[point1[1] - half_patch_size : point1[1] + half_patch_size_upper, point1[0] - half_patch_size : point1[0] + half_patch_size_upper]
-    points2 = img2[point2[1] - half_patch_size : point2[1] + half_patch_size_upper, point2[0] - half_patch_size : point2[0] + half_patch_size_upper]
+    points1 = img1[
+        point1[1] - half_patch_size : point1[1] + half_patch_size_upper,
+        point1[0] - half_patch_size : point1[0] + half_patch_size_upper,
+    ]
+    points2 = img2[
+        point2[1] - half_patch_size : point2[1] + half_patch_size_upper,
+        point2[0] - half_patch_size : point2[0] + half_patch_size_upper,
+    ]
 
     if print_debug:
         print(f"points1: {points1.shape}")
@@ -47,13 +55,14 @@ def ransac(
     kp1,
     kp2,
     iterations: int = 1000,
+    patch_size: int = 1,
     threshold: float = 5.0,
 ):
     n = iterations  # Number of iterations
 
     best_inliers = []
     best_H = None
-  
+
     for x in range(n):
         # Select 4 random matches
         random_matches = random.sample(matches, 4)
@@ -90,8 +99,6 @@ def ransac(
         # Compute the inliers and outliers
         # reset to empty lists
         inliers = []
-        outliers = []
-        # H = invert_homography(H)
 
         for match in matches:
             # Get the points from the match
@@ -126,9 +133,11 @@ def ransac(
                     plt.show()
                     plt.close()
 
-                reprojection_error = compute_ssd_of_neighborhood(
-                    img1, img2, point1, homographed_point, patch_size=1
-                )
+                # reprojection_error = compute_ssd_of_neighborhood(
+                #     img1, img2, point1, homographed_point, patch_size=patch_size
+                # )
+
+                reprojection_error = np.linalg.norm(homographed_point - point2)
 
                 if reprojection_error < threshold:
                     inliers.append(match)
@@ -144,15 +153,3 @@ def ransac(
     print(f"Number of outliers: {len(matches) - len(best_inliers)}")
     print(f"Homography matrix: {best_H}")
     return best_inliers, best_H
-
-
-def compute_average_homography(best_inliers, kp1, kp2):
-    """
-    Compute the average homography matrix using the best inliers.
-    """
-    homography, _ = cv2.findHomography(
-        np.array([kp1[match.queryIdx].pt for match in best_inliers], dtype=np.float32),
-        np.array([kp2[match.trainIdx].pt for match in best_inliers], dtype=np.float32),
-    )
-
-    return homography

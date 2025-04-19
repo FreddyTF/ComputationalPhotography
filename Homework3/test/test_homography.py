@@ -41,7 +41,7 @@ def test_compute_homography_from_matches():
     dst_pts = np.array([kp2[m.trainIdx].pt for m in matches], dtype=np.float32)
 
     # Call the function
-    computed_homography, _ = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
+    computed_homography, _ = cv2.findHomography(src_pts, dst_pts, method=0) # 0 for least squares
 
     # Assert the result
     assert computed_homography is not None
