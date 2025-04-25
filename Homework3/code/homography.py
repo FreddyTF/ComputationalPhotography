@@ -12,11 +12,9 @@ def apply_homography(homography, point):
     transformed_point /= transformed_point[2]  # Normalize
     return transformed_point[:2]  # Return only x and y coordinates
 
-
 def invert_homography(homography):
     # Invert the homography matrix
     return np.linalg.inv(homography)
-
 
 def compute_average_homography(best_inliers, kp1, kp2, img1, img2, visualize=False):
     """

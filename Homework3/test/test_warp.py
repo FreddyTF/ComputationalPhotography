@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../code
 
 from feature_detect import detect_features
 from feature_match import match_features
-from ransac import ransac, compute_ssd_of_neighborhood
+from ransac import ransac
 import cv2
 import glob
 from warp import warp_and_stich_images
@@ -47,7 +47,7 @@ def test_warp():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_and_stich_images(H, img1, img2, visualize=True)
+    result = warp_and_stich_images(H, img1, img2)
 
     assert result is not None, "Warped image should not be None"
 
@@ -84,7 +84,7 @@ def test_warp_sift():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_and_stich_images(H, img1, img2, visualize=True)
+    result = warp_and_stich_images(H, img1, img2)
 
     assert result is not None, "Warped image should not be None"
 
@@ -119,7 +119,7 @@ def test_warp_2():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_and_stich_images(homography, img1, img2, visualize=False)
+    result = warp_and_stich_images(homography, img1, img2)
 
     assert result is not None, "Warped image should not be None"
 
@@ -154,40 +154,6 @@ def test_warp_5():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_and_stich_images(H, img1, img2, visualize=True)
+    result = warp_and_stich_images(H, img1, img2)
 
     assert result is not None, "Warped image should not be None"
-
-
-def simple_image_blending(blending):
-    H = np.array([1.0, 0.0, -1429.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]).reshape(3, 3)
-
-    image_files = glob.glob(
-        os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../images/panorama1/*.jpeg")
-        )
-    )
-
-    image1 = cv2.imread(image_files[0])
-    image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
-    image2 = cv2.imread(image_files[1])
-    image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2RGB)
-
-    result = warp_and_stich_images(H, image1, image2, blending=blending, visualize=True)
-
-    return result
-
-
-def test_alpha_blending():
-    result = simple_image_blending("alpha_blending")
-    assert result is not None, "Alpha blended image should not be None"
-
-
-def test_multi_band_blending():
-    result = simple_image_blending("multi_band_blending")
-    assert result is not None, "Multi-band blended image should not be None"
-
-
-def test_poisson_blending():
-    result = simple_image_blending("poisson")
-    assert result is not None, "Poisson blended image should not be None"

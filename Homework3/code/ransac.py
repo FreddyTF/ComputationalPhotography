@@ -6,48 +6,6 @@ from homography import apply_homography, invert_homography
 from matplotlib import pyplot as plt
 
 
-def compute_ssd_of_neighborhood(
-    img1, img2, point1, point2, patch_size: int = 3, print_debug=False
-):
-    """
-    COmpute the sum of squared differences (SSD) between two patches in two images.
-    The patches are centered around the given points.
-    The patches are 5x5 pixels in size.
-    """
-    half_patch_size = patch_size // 2
-    half_patch_size_upper = half_patch_size + 1
-
-    if (
-        point1[1] - half_patch_size < 0
-        or point1[1] + half_patch_size_upper + 1 > img1.shape[0]
-        or point1[0] - half_patch_size < 0
-        or point1[0] + half_patch_size_upper > img1.shape[1]
-        or point2[1] - half_patch_size < 0
-        or point2[1] + half_patch_size_upper > img2.shape[0]
-        or point2[0] - half_patch_size < 0
-        or point2[0] + half_patch_size_upper > img2.shape[1]
-    ):
-        return np.inf
-        # raise ValueError("Patch goes out of image bounds.")
-
-    points1 = img1[
-        point1[1] - half_patch_size : point1[1] + half_patch_size_upper,
-        point1[0] - half_patch_size : point1[0] + half_patch_size_upper,
-    ]
-    points2 = img2[
-        point2[1] - half_patch_size : point2[1] + half_patch_size_upper,
-        point2[0] - half_patch_size : point2[0] + half_patch_size_upper,
-    ]
-
-    if print_debug:
-        print(f"points1: {points1.shape}")
-        print(f"points2: {points2.shape}")
-
-    # Compute the sum of squared differences (SSD)
-    ssd = np.sum((points1 - points2) ** 2) / (patch_size**2 * 3)
-    return ssd
-
-
 def ransac(
     matches,
     img1,
@@ -68,24 +26,6 @@ def ransac(
     for x in range(n):
         # Select 4 random matches
         random_matches = random.sample(matches, 4)
-
-        if False:
-            img3 = cv2.drawMatches(
-                img1,
-                kp1,
-                img2,
-                kp2,
-                random_matches,
-                None,
-                flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-                matchColor=(0, 0, 255),  # Green color for matches
-                singlePointColor=None,
-                matchesThickness=10,  # Increase the thickness of the match lines
-            )
-
-            plt.imshow(img3), plt.show()
-
-            plt.axis("off")
 
         # compute the indexes of the matches
         indexes_1 = np.array([match.queryIdx for match in random_matches])
@@ -130,28 +70,6 @@ def ransac(
                 and (0 <= homographed_point[0])
                 and (homographed_point[0] < img2.shape[1])
             ):
-                if False:
-                    # Visualize the homographed point on img1 and point2 on img2
-                    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-                    axes[0].imshow(img1)
-                    axes[0].scatter(
-                        homographed_point[0], homographed_point[1], c="b", s=40
-                    )
-                    axes[0].set_title("Image 1 with Homographed Point")
-                    axes[0].axis("off")
-
-                    axes[1].imshow(img2)
-                    axes[1].scatter(point2[0], point2[1], c="b", s=40)
-                    axes[1].set_title("Image 2 with Point 2")
-                    axes[1].axis("off")
-
-                    plt.show()
-                    plt.close()
-
-                # reprojection_error = compute_ssd_of_neighborhood(
-                #     img1, img2, point1, homographed_point, patch_size=patch_size
-                # )
-
                 reprojection_error = np.linalg.norm(homographed_point - point2, 2)
 
                 if reprojection_error < threshold:
