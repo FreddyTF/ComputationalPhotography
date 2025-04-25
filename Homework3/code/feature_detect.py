@@ -4,30 +4,39 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-def detect_features(img: np.ndarray, visualize: bool = False):
-    orb = cv2.ORB_create(
-        nfeatures=1000,  # max number of features to retain
-        scaleFactor=1.2,  # scale factor between levels in the pyramid
-        nlevels=8,  # number of levels in the pyramid
-        edgeThreshold=31,  # size of the border where features are not detected
-        firstLevel=0,  # level of pyramid to start from
-        WTA_K=2,  # number of points that produce each feature
-        scoreType=cv2.ORB_HARRIS_SCORE,  # Harris score for feature detection
-        patchSize=31,  # size of the patch used by the Harris detector
-    )
+def detect_features(img: np.ndarray, mode: str = "orb", visualize: bool = False):
+    if mode == "orb":
+        orb = cv2.ORB_create()
 
-    # compute the descriptors with ORB
-    kp, des = orb.detectAndCompute(img, None)
+        # compute the descriptors with ORB
+        kp, des = orb.detectAndCompute(img, None)
 
-    if visualize:
-        # draw only keypoints location,not size and orientation
-        img2 = cv2.drawKeypoints(
-            img,
-            kp,
-            None,
-            color=(0, 0, 255),
-            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+        if visualize:
+            # draw only keypoints location,not size and orientation
+            img2 = cv2.drawKeypoints(
+                img,
+                kp,
+                None,
+                color=(0, 0, 255),
+                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+            )
+            plt.imshow(img2), plt.show()
+
+        return kp, des
+    elif mode == "sift":
+        sift = cv2.SIFT_create(
+            nfeatures=3000,  # max number of features to retain
         )
-        plt.imshow(img2), plt.show()
+        kp, des = sift.detectAndCompute(img, None)
 
-    return kp, des
+        if visualize:
+            img2 = cv2.drawKeypoints(
+                img,
+                kp,
+                None,
+                color=(0, 0, 255),
+                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+            )
+            plt.imshow(img2), plt.show()
+
+        return kp, des

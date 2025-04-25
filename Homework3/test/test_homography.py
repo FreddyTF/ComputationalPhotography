@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../code")))
 
-from homography import compute_homography_from_matches
+
 import cv2
 import glob
 

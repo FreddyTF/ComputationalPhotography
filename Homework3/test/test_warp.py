@@ -11,7 +11,7 @@ from feature_match import match_features
 from ransac import ransac, compute_ssd_of_neighborhood
 import cv2
 import glob
-from warp import warp_images_inverse
+from warp import warp_and_stich_images
 from homography import compute_average_homography
 
 
@@ -23,16 +23,18 @@ def test_warp():
         )
     )
     # in this case always 2 files
-
-    img1 = cv2.imread(image_files[1])
+    features = "orb"
+    img1 = cv2.imread(image_files[0])
     img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-    kp1, des1 = detect_features(img1, visualize=False)
+    kp1, des1 = detect_features(img1, visualize=False, mode=features)
 
-    img2 = cv2.imread(image_files[0])
+    img2 = cv2.imread(image_files[1])
     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-    kp2, des2 = detect_features(img2, visualize=False)
+    kp2, des2 = detect_features(img2, visualize=False, mode=features)
 
-    matches = match_features(img1, kp1, des1, img2, kp2, des2, visualize=False)
+    matches = match_features(
+        img1, kp1, des1, img2, kp2, des2, visualize=False, features=features
+    )
 
     ransac_matches, H = ransac(
         matches, img1, img2, kp1, kp2, threshold=3.0, patch_size=7, iterations=1000
@@ -45,7 +47,44 @@ def test_warp():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_images_inverse(H, img1, img2, visualize=True)
+    result = warp_and_stich_images(H, img1, img2, visualize=True)
+
+    assert result is not None, "Warped image should not be None"
+
+
+def test_warp_sift():
+    # Test if the feature detection function works correctly
+    image_files = glob.glob(
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../images/panorama1/*.jpeg")
+        )
+    )
+    # in this case always 2 files
+    features = "sift"
+    img1 = cv2.imread(image_files[0])
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+    kp1, des1 = detect_features(img1, visualize=False, mode=features)
+
+    img2 = cv2.imread(image_files[1])
+    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+    kp2, des2 = detect_features(img2, visualize=False, mode=features)
+
+    matches = match_features(
+        img1, kp1, des1, img2, kp2, des2, visualize=False, features=features
+    )
+
+    ransac_matches, H = ransac(
+        matches, img1, img2, kp1, kp2, threshold=3.0, patch_size=7, iterations=500
+    )
+
+    homography = compute_average_homography(
+        ransac_matches, kp1, kp2, img1, img2, visualize=True
+    )
+
+    print(f"Homography: {homography}")
+    assert homography is not None, "Homography should not be None"
+
+    result = warp_and_stich_images(H, img1, img2, visualize=True)
 
     assert result is not None, "Warped image should not be None"
 
@@ -67,7 +106,7 @@ def test_warp_2():
     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
     kp2, des2 = detect_features(img2, visualize=False)
 
-    matches = match_features(img1, kp1, des1, img2, kp2, des2, visualize=True)
+    matches = match_features(img1, kp1, des1, img2, kp2, des2, visualize=False)
 
     ransac_matches, H = ransac(
         matches, img1, img2, kp1, kp2, threshold=2.0, patch_size=7, iterations=2000
@@ -80,6 +119,75 @@ def test_warp_2():
     print(f"Homography: {homography}")
     assert homography is not None, "Homography should not be None"
 
-    result = warp_images_inverse(homography, img1, img2, visualize=False)
+    result = warp_and_stich_images(homography, img1, img2, visualize=False)
 
     assert result is not None, "Warped image should not be None"
+
+
+def test_warp_5():
+    # Test if the feature detection function works correctly
+    image_files = glob.glob(
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../images/panorama5/*.jpeg")
+        )
+    )
+    # in this case always 2 files
+
+    img1 = cv2.imread(image_files[0])
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+    kp1, des1 = detect_features(img1, mode="orb", visualize=False)
+
+    img2 = cv2.imread(image_files[1])
+    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+    kp2, des2 = detect_features(img2, mode="orb", visualize=False)
+
+    matches = match_features(img1, kp1, des1, img2, kp2, des2, visualize=False)
+
+    ransac_matches, H = ransac(
+        matches, img1, img2, kp1, kp2, threshold=3.0, patch_size=7, iterations=1000
+    )
+
+    homography = compute_average_homography(
+        ransac_matches, kp1, kp2, img1, img2, visualize=True
+    )
+
+    print(f"Homography: {homography}")
+    assert homography is not None, "Homography should not be None"
+
+    result = warp_and_stich_images(H, img1, img2, visualize=True)
+
+    assert result is not None, "Warped image should not be None"
+
+
+def simple_image_blending(blending):
+    H = np.array([1.0, 0.0, -1429.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]).reshape(3, 3)
+
+    image_files = glob.glob(
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../images/panorama1/*.jpeg")
+        )
+    )
+
+    image1 = cv2.imread(image_files[0])
+    image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+    image2 = cv2.imread(image_files[1])
+    image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2RGB)
+
+    result = warp_and_stich_images(H, image1, image2, blending=blending, visualize=True)
+
+    return result
+
+
+def test_alpha_blending():
+    result = simple_image_blending("alpha_blending")
+    assert result is not None, "Alpha blended image should not be None"
+
+
+def test_multi_band_blending():
+    result = simple_image_blending("multi_band_blending")
+    assert result is not None, "Multi-band blended image should not be None"
+
+
+def test_poisson_blending():
+    result = simple_image_blending("poisson")
+    assert result is not None, "Poisson blended image should not be None"

@@ -63,6 +63,8 @@ def ransac(
     best_inliers = []
     best_H = None
 
+    outliers_count_best = len(matches) + 1
+
     for x in range(n):
         # Select 4 random matches
         random_matches = random.sample(matches, 4)
@@ -99,21 +101,34 @@ def ransac(
         # Compute the inliers and outliers
         # reset to empty lists
         inliers = []
+        outliers_count = 0
+        inliers_count = 0
 
         for match in matches:
+            # make computing faster by skipping the matches that are roven to be worse than the best
+            if outliers_count > outliers_count_best:
+                # print("Skipping match")
+                continue
             # Get the points from the match
             point1 = np.array(kp1[match.queryIdx].pt, dtype=np.int32)
             point2 = np.array(kp2[match.trainIdx].pt, dtype=np.int32)
 
             homographed_point = apply_homography(H, point1)
-            homographed_point = np.array(
-                [int(homographed_point[0]), int(homographed_point[1])], dtype=np.int32
-            )
+            try:
+                homographed_point = np.array(
+                    [int(homographed_point[0]), int(homographed_point[1])],
+                    dtype=np.int32,
+                )
+            except Exception as e:
+                print(f"Error in homography: {e}")
+                outliers_count += 1
+                continue
+
             if (
-                (1 < homographed_point[1])
-                and (homographed_point[1] < img1.shape[0] - 1)
-                and (1 < homographed_point[0])
-                and (homographed_point[0] < img1.shape[1] - 1)
+                (0 <= homographed_point[1])
+                and (homographed_point[1] < img2.shape[0])
+                and (0 <= homographed_point[0])
+                and (homographed_point[0] < img2.shape[1])
             ):
                 if False:
                     # Visualize the homographed point on img1 and point2 on img2
@@ -137,10 +152,13 @@ def ransac(
                 #     img1, img2, point1, homographed_point, patch_size=patch_size
                 # )
 
-                reprojection_error = np.linalg.norm(homographed_point - point2)
+                reprojection_error = np.linalg.norm(homographed_point - point2, 2)
 
                 if reprojection_error < threshold:
                     inliers.append(match)
+                    inliers_count += 1
+                else:
+                    outliers_count += 1
 
         if len(inliers) > len(best_inliers):
             print("Found better inliers")
@@ -148,6 +166,7 @@ def ransac(
 
             best_inliers = inliers.copy()
             best_H = H
+            outliers_count_best = outliers_count
 
     print(f"Number of inliers: {len(best_inliers)}")
     print(f"Number of outliers: {len(matches) - len(best_inliers)}")
